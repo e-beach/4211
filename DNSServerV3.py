@@ -28,7 +28,29 @@ def main():
 		server.start()
 
 def dnsQuery(connectionSock, srcAddress):
+
+	hostName = connectionSock.recv(1024).decode() # Receive from client.
+
+	DNS_Cache = "DNS_mapping.txt"
+	open(DNS_Cache, "a") # Create if not existssxz
+
 	#check the DNS_mapping.txt to see if the host name exists
+	for line in open(DNS_Cache).read():
+		if line.contains(hostName):
+			result = "Local DNS:" + line.trim()
+			connectionSock.send(result.encode())
+	
+	try:
+		cSock = socket(AF_INET, SOCK_STREAM)
+	except error as msg:
+		cSock = None # Handle exception
+
+	result = "Root DNS:" + hostName + cSock.getHostByName(hostName)
+	with open(DNS_Cache, "a") as mapping:
+		mapping.write(result)
+	connectionSock.send(result.encode())
+
+
 	#set local file cache to predetermined file.
         #create file if it doesn't exist 
         #if it does exist, read the file line by line to look for a

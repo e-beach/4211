@@ -20,7 +20,7 @@ def main():
 			sys.exit(1) # If input is "q" or "Q", quit the program.
 		else:
 			host = "localhost" # Remote hostname. It can be changed to anything you desire.
-			port = 5002 # Port number.
+			port = 5001 # Port number.
 
 			try:
 				cSock = socket(AF_INET, SOCK_STREAM)
@@ -30,6 +30,7 @@ def main():
 			try:
 				cSock.connect((host, port))
 			except error as msg:
+				raise
 				cSock = None # Handle exception
 
 			if cSock is None:
