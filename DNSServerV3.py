@@ -3,11 +3,12 @@
 # Written in Python v3.
 
 import sys, threading, os
+import os
 from socket import *
 
 def main():
     host = "localhost" # Hostname. It can be changed to anything you desire.
-    port = 5003 # Port number.
+    port = os.environ.get("4211_port", 5000)
 
     #create a socket object, SOCK_STREAM for TCP
     try:
@@ -39,34 +40,38 @@ def main():
             sSock.close()
             raise
 
+
 def dnsQuery(connectionSock, srcAddress):
 
-    hostName = connectionSock.recv(1024).decode() # Receive from client.
+    def handle():
+        hostName = connectionSock.recv(1024).decode() # Receive from client.
 
-    DNS_Cache = "DNS_mapping.txt"
-    open(DNS_Cache, "a") # Create if not existssxz
+        DNS_Cache = "DNS_mapping.txt"
+        open(DNS_Cache, "a") # Create if not exists
 
-    #check the DNS_mapping.txt to see if the host name exists
-    for line in open(DNS_Cache):
-        if hostName in line:
-            result = "Local DNS:" + line.strip()
-            connectionSock.send(result.encode())
-    try:
-        cSock = socket(AF_INET, SOCK_STREAM)
-    except error as msg:
-        cSock = None # Handle exception
+        #check the DNS_mapping.txt to see if the host name exists
+        for line in open(DNS_Cache):
+            if hostName in line.split(":")[0]:
+                result = "Local DNS: {}".format(line.strip())
+                return result
 
-    try:
-        result = "Root DNS: " + hostName + gethostbyname(hostName)
-    except gaierror:
-        result = "invalid hostname"
-    except error:
-        result = "error decoding DNS: " + error
-    else:
-        with open(DNS_Cache, "a") as mapping:
-            mapping.write(result + "\n")
+        try:
+            mapping = '{}:{}'.format(hostName, gethostbyname(hostName))
+            result = 'Root DNS: {}'.format(mapping)
+        except gaierror:
+            result = "invalid hostname"
+        except error:
+            result = "error decoding DNS: " + error
+        else:
+            if mapping:
+                with open(DNS_Cache, "a") as f:
+                    f.write(mapping + "\n")
+        return result
+
+    result = handle()
+    print(result)
     connectionSock.send(result.encode())
-
+    connectionSock.close()
 
     #set local file cache to predetermined file.
         #create file if it doesn't exist
@@ -77,8 +82,6 @@ def dnsQuery(connectionSock, srcAddress):
     #print response to the terminal
     #send the response back to the client
     #Close the server socket.
-
-
 
 def monitorQuit():
     while 1:

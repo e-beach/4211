@@ -3,6 +3,7 @@
 # Written in Python v3.
 
 import sys
+import os
 from socket import *
 
 def main():
@@ -20,7 +21,7 @@ def main():
 			sys.exit(1) # If input is "q" or "Q", quit the program.
 		else:
 			host = "localhost" # Remote hostname. It can be changed to anything you desire.
-			port = 5003 # Port number.
+			port = os.environ.get("4211_port", 5000)
 
 			try:
 				cSock = socket(AF_INET, SOCK_STREAM)
