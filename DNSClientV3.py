@@ -26,13 +26,12 @@ def main():
 			try:
 				cSock = socket(AF_INET, SOCK_STREAM)
 			except error as msg:
-				cSock = None # Handle exception
+				cSock = None
 
 			try:
 				cSock.connect((host, port))
 			except error as msg:
-				raise
-				cSock = None # Handle exception
+				cSock = None
 
 			if cSock is None:
 				print("Error: cannot open socket")

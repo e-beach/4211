@@ -4,7 +4,13 @@
 
 import sys, threading, os
 import os
+import re
 from socket import *
+
+# https://stackoverflow.com/questions/106179/regular-expression-to-match-dns-hostname-or-ip-address
+ValidHostnameRegex = "^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$"
+
+DNS_Cache = "DNS_mapping.txt"
 
 def main():
     host = "localhost" # Hostname. It can be changed to anything you desire.
@@ -46,42 +52,37 @@ def dnsQuery(connectionSock, srcAddress):
     def handle():
         hostName = connectionSock.recv(1024).decode() # Receive from client.
 
-        DNS_Cache = "DNS_mapping.txt"
+        if not re.search(ValidHostnameRegex, hostName):
+            return "Invalid hostname"
+
         open(DNS_Cache, "a") # Create if not exists
 
         #check the DNS_mapping.txt to see if the host name exists
         for line in open(DNS_Cache):
             if hostName in line.split(":")[0]:
-                result = "Local DNS: {}".format(line.strip())
+                result = "Local DNS:{}".format(line.strip())
                 return result
 
         try:
-            mapping = '{}:{}'.format(hostName, gethostbyname(hostName))
-            result = 'Root DNS: {}'.format(mapping)
-        except gaierror:
-            result = "invalid hostname"
-        except error:
-            result = "error decoding DNS: " + error
-        else:
-            if mapping:
-                with open(DNS_Cache, "a") as f:
-                    f.write(mapping + "\n")
+            addr = gethostbyname(hostName)
+        except error as e: # TODO: gaierror, herror?
+            print(error.errno)
+            if error.errno == -2:
+                addr = "Host Not Found"
+            else:
+                addr = "resolving DNS failed: {}".format(str(e))
+
+        mapping = '{}:{}'.format(hostName, addr)
+        result = 'Root DNS:{}'.format(mapping)
+        with open(DNS_Cache, "a") as f:
+            f.write(mapping + "\n")
+
         return result
 
     result = handle()
     print(result)
     connectionSock.send(result.encode())
     connectionSock.close()
-
-    #set local file cache to predetermined file.
-        #create file if it doesn't exist
-        #if it does exist, read the file line by line to look for a
-        #match with the query sent from the client
-    #If no lines match, query the local machine DNS lookup to get the IP resolution
-    #write the response in DNS_mapping.txt
-    #print response to the terminal
-    #send the response back to the client
-    #Close the server socket.
 
 def monitorQuit():
     while 1:
